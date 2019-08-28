@@ -1,0 +1,145 @@
+---
+- hosts: all
+  become: True
+  vars:
+    localadmin: vagrant
+  tasks:
+
+  - debug:
+      msg: "{{ lookup('pipe','whoami') }}"
+
+  - name: Software Packages Allowing Apt over HTTPS
+    apt:
+      name: "{{ packages }}"
+      state: present
+      update_cache: yes
+    vars:
+      packages:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg-agent
+      - software-properties-common
+
+  - name: Apt Signing Key for Docker
+    apt_key:
+      url: https://download.docker.com/linux/ubuntu/gpg
+      state: present
+
+  - name: Apt Repository for Docker Stable Version
+    apt_repository:
+      repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable
+      state: present
+
+  - name: Docker and Docker Dependecies are Installed
+    apt:
+      name: "{{ packages }}"
+      state: present
+      update_cache: yes
+    vars:
+      packages:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    notify:
+      - docker status
+
+  - name: User vagrant in Group docker
+    user:
+      name: vagrant
+      group: docker
+
+  - name: No Swap Files in /etc/fstab
+    mount:
+      name: "{{ item }}"
+      fstype: swap
+      state: absent
+    with_items:
+      - swap
+      - none
+
+  - name: Swap Disabled
+    command: swapoff -a
+    when: ansible_swaptotal_mb > 0
+
+  - name: Apt Signing Key for Kubernetes
+    apt_key:
+      url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+      state: present
+
+  - name: Apt Repository for Kubernetes
+    apt_repository:
+      repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+      state: present
+      filename: kubernetes.list
+
+  - name: Kubernetes Binaries Installed
+    apt:
+      name: "{{ packages }}"
+      state: present
+      update_cache: yes
+    vars:
+      packages:
+        - kubelet
+        - kubeadm
+        - kubectl
+
+  - name: Check for Existing Kubernetes Cluster
+    shell: kubectl get nodes --all-namespaces
+    register: kubernetes_cluster
+    failed_when: False
+#   changed_when:
+#     - "'refused' in kubernetes_cluster.stdout_lines"
+
+  - name: Initialize the Kubernetes Cluster
+    command: >
+      kubeadm init
+      --node-name master
+      --pod-network-cidr=192.168.0.0/16
+      --apiserver-advertise-address="192.168.50.10"
+      --apiserver-cert-extra-sans="192.168.50.10"
+    when: "'refused' in kubernetes_cluster.stderr"
+
+  - name: Directory .kube Exists
+    file:
+      path: "/home/{{ localadmin }}/.kube"
+      state: directory
+
+  - name: Check for Existing Kube Config File
+    stat:
+      path: "/home/{{ localadmin }}/.kube/config"
+    register: kube_config
+
+  - name: Create Kube Config File
+    copy:
+      remote_src: True
+      src: "/etc/kubernetes/admin.conf"
+      dest: "/home/{{ localadmin }}/.kube/config"
+      owner: "{{ localadmin }}"
+      group: "{{ localadmin }}"
+      mode: 0600
+#   when: kube_config.stat.exists == True and kube_config.stat.isreg == True
+
+  - name: Calico Pod Network Config
+    stat:
+      path: "/etc/cni/net.d/calico-kubeconfig"
+    changed_when: False
+    failed_when: False
+    register: network_config
+
+  - name: Calico Pod Network
+    become: false
+    command: kubectl create -f https://docs.projectcalico.org/v3.4/getting-started/kubernetes/installation/hosted/calico.yaml
+    when: network_config.stat.exists == False
+
+  - name: Generate Kubernetes Join Command
+    command: kubeadm token create --print-join-command
+    register: join_command
+
+  - name: Copy Join Command to Local File
+    local_action: copy content="{{ join_command.stdout_lines[0] }}" dest="./join-command.sh"
+
+  handlers:
+    - name: docker status
+      service: name=docker state=started
+...
