@@ -1,0 +1,12 @@
+# Ignore the Kubernetes join script, as it is auto-generated each run
+playbooks/join-command.sh
+
+# Ansible
+*.retry
+
+# Vagrant
+.vagrant
+
+# Log Files
+*.log
+
