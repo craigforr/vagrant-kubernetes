@@ -84,6 +84,22 @@
     command: swapoff -a
     when: ansible_swaptotal_mb > 0
 
+  - name: Snap Installed
+    apt:
+      name: snapd
+      state: present
+
+  - name: Snap Enabled in systemd
+    systemd:
+      state: started
+      name: snapd
+
+  - name: Helm Installed (Snap)
+    snap:
+      name:
+      - helm
+      classic: true
+
   - name: Apt Signing Key for Kubernetes
     apt_key:
       url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
