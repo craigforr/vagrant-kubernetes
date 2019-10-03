@@ -21,10 +21,14 @@ Vagrant.configure("2") do |config|
         master.vm.hostname = "master"
         master.vm.synced_folder ".", "/vagrant"
         master.vm.provision "ansible_local" do |ansible|
-            ansible.playbook = "playbooks/kubernetes-master.yml"
+            ansible.compatibility_mode  = "2.0"
+            ansible.playbook            = "playbooks/kubernetes-master.yml"
+            ansible.verbose             = false
         end
         master.vm.provision "ansible_local" do |ansible|
-            ansible.playbook = "playbooks/kubernetes-master-extras.yml"
+            ansible.compatibility_mode  = "2.0"
+            ansible.playbook            = "playbooks/kubernetes-master-extras.yml"
+            ansible.verbose             = false
         end
     end
 
