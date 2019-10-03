@@ -154,7 +154,7 @@
 
   - name: Calico Pod Network
     become: false
-    command: kubectl create -f https://docs.projectcalico.org/v3.4/getting-started/kubernetes/installation/hosted/calico.yaml
+    command: kubectl create -f https://docs.projectcalico.org/v3.8/getting-started/kubernetes/installation/hosted/calico.yaml
     when: network_config.stat.exists == False
 
   - name: Generate Kubernetes Join Command
