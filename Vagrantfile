@@ -19,6 +19,7 @@ Vagrant.configure("2") do |config|
         master.vm.box = BOX_NAME
         master.vm.network "private_network", ip: "192.168.50.10"
         master.vm.hostname = "master"
+        master.vm.provision "file", source: "files/docker_daemon.json", destination: "docker_daemon.json"
         master.vm.synced_folder ".", "/vagrant"
         master.vm.provision "ansible_local" do |ansible|
             ansible.compatibility_mode  = "2.0"

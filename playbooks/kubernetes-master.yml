@@ -28,21 +28,43 @@
 
   - name: Apt Repository for Docker Stable Version
     apt_repository:
-      repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable
+      repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable"
       state: present
 
-  - name: Docker and Docker Dependecies are Installed
+  - name: Docker Dependecies are Installed
     apt:
       name: "{{ packages }}"
       state: present
       update_cache: yes
     vars:
       packages:
-      - docker-ce
       - docker-ce-cli
       - containerd.io
+
+  - name: Docker is Installed
+    apt:
+      name: "{{ packages }}"
+      state: present
+      update_cache: yes
+    vars:
+      packages:
+      - docker-ce=18.06.2~ce~3-0~ubuntu
+
+  - dpkg_selections:
+      name: docker-ce
+      selection: hold
+
+  - name: Docker Daemon JSON Configuration File
+    copy:
+      src: "/home/{{ localadmin }}/docker_daemon.json"
+      dest: /etc/docker/daemon.json
+
+  - name: Directory for Docker Service Exists
+    file:
+      path: /etc/systemd/system/docker.service.d
+      state: directory
     notify:
-      - docker status
+      - Systemd Manager Configuration Reload
 
   - name: User vagrant in Group docker
     user:
@@ -88,8 +110,11 @@
     shell: kubectl get nodes --all-namespaces
     register: kubernetes_cluster
     failed_when: False
-#   changed_when:
-#     - "'refused' in kubernetes_cluster.stdout_lines"
+    changed_when:
+      - "'refused' not in kubernetes_cluster.stdout_lines"
+
+  - debug:
+      var: kubernetes_cluster
 
   - name: Initialize the Kubernetes Cluster
     command: >
@@ -140,6 +165,12 @@
     local_action: copy content="{{ join_command.stdout_lines[0] }}" dest="./join-command.sh"
 
   handlers:
-    - name: docker status
-      service: name=docker state=started
+    - name: Docker Status
+      service:
+        name: docker
+        state: started
+
+    - name: Systemd Manager Configuration Reload
+      shell: |
+        /bin/systemctl daemon-reload
 ...
