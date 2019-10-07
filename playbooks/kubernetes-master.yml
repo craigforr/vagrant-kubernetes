@@ -6,6 +6,9 @@
   tasks:
 
   - debug:
+      msg: "{{ ansible_facts }}"
+
+  - debug:
       msg: "{{ lookup('pipe','whoami') }}"
 
   - name: Software Packages Allowing Apt over HTTPS
