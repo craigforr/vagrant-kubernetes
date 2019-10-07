@@ -127,10 +127,11 @@
 
   - name: Check for Existing Kubernetes Cluster
     shell: kubectl get nodes --all-namespaces
+    become: False
     register: kubernetes_cluster
     failed_when: False
     changed_when:
-      - "'refused' not in kubernetes_cluster.stdout_lines"
+      - "'refused' not in kubernetes_cluster.stdout"
 
   - debug:
       var: kubernetes_cluster
