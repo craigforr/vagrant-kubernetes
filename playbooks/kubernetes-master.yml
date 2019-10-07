@@ -41,7 +41,7 @@
       update_cache: yes
     vars:
       packages:
-      - docker-ce-cli
+#     - docker-ce-cli
       - containerd.io
 
   - name: Docker is Installed
