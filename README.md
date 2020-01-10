@@ -2,7 +2,7 @@
 
 Kubernetes cluster deployment with a single control plane node and an arbitrary number of nodes, using Vagrant (VirtualBox provider, Ansible provisioner).
 
-## What's in the Box:
+## What's in the Box
 
 The default configuration will build a 4 node cluster --- a master and 3 workers:
 
