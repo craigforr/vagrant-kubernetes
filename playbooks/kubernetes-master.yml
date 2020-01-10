@@ -1,8 +1,9 @@
 ---
 - hosts: all
-  become: True
+  become: true
   vars:
     localadmin: vagrant
+    docker_ce_version: "18.06.2~ce~3-0~ubuntu"
   tasks:
 
   - debug:
@@ -34,13 +35,15 @@
       repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable"
       state: present
 
-  - name: Docker Dependecies are Installed
+  - name: Docker Dependecies
     apt:
       name: "{{ packages }}"
       state: present
       update_cache: yes
     vars:
       packages:
+#     docker-ce-cli is apparently only required for Docker 18.09+
+#     https://stackoverflow.com/a/54505075/366727
 #     - docker-ce-cli
       - containerd.io
 
@@ -51,7 +54,7 @@
       update_cache: yes
     vars:
       packages:
-      - docker-ce=18.06.2~ce~3-0~ubuntu
+      - "docker-ce={{ docker_ce_version }}"
 
   - dpkg_selections:
       name: docker-ce
@@ -62,12 +65,12 @@
       src: "/home/{{ localadmin }}/docker_daemon.json"
       dest: /etc/docker/daemon.json
 
-  - name: Directory for Docker Service Exists
+  - name: Directory for Docker Service
     file:
       path: /etc/systemd/system/docker.service.d
       state: directory
     notify:
-      - Systemd Manager Configuration Reload
+      - Systemd Manager Reload
 
   - name: User vagrant in Group docker
     user:
@@ -136,16 +139,16 @@
   - debug:
       var: kubernetes_cluster
 
-  - name: Initialize the Kubernetes Cluster
+  - name: Kubernetes Cluster Initialization
     command: >
       kubeadm init
       --node-name master
-      --pod-network-cidr=192.168.0.0/16
-      --apiserver-advertise-address="192.168.50.10"
-      --apiserver-cert-extra-sans="192.168.50.10"
+      --pod-network-cidr=192.168.56.128/16
+      --apiserver-advertise-address="192.168.56.129"
+      --apiserver-cert-extra-sans="192.168.56.129"
     when: "'refused' in kubernetes_cluster.stderr"
 
-  - name: Directory .kube Exists
+  - name: Directory .kube
     file:
       path: "/home/{{ localadmin }}/.kube"
       state: directory
@@ -177,12 +180,12 @@
     command: kubectl create -f https://docs.projectcalico.org/v3.8/getting-started/kubernetes/installation/hosted/calico.yaml
     when: network_config.stat.exists == False
 
-  - name: Generate Kubernetes Join Command
+  - name: Kubernetes Join Command
     command: kubeadm token create --print-join-command
     register: join_command
 
-  - name: Copy Join Command to Local File
-    local_action: copy content="{{ join_command.stdout_lines[0] }}" dest="./join-command.sh"
+  - name: Join Command in Local File
+    local_action: copy content="{{ join_command.stdout_lines[0] }}" dest="./join_command.sh"
 
   handlers:
     - name: Docker Status
@@ -190,7 +193,7 @@
         name: docker
         state: started
 
-    - name: Systemd Manager Configuration Reload
+    - name: Systemd Manager Reload
       shell: |
         /bin/systemctl daemon-reload
 ...

@@ -4,7 +4,7 @@
   vars:
     localadmin: vagrant
   tasks:
-  - name: Verify Software Packages Allowing Apt over HTTPS
+  - name: Software Packages Allowing Apt over HTTPS
     apt:
       name: "{{ packages }}"
       state: present
@@ -17,17 +17,17 @@
       - gnupg-agent
       - software-properties-common
 
-  - name: Verify Apt Signing Key for Docker
+  - name: Apt Signing Key for Docker
     apt_key:
       url: https://download.docker.com/linux/ubuntu/gpg
       state: present
 
-  - name: Verify Apt Repository for Docker Stable Version
+  - name: Apt Repository for Docker Stable Version
     apt_repository:
       repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable
       state: present
 
-  - name: Verify Docker and Docker Dependecies are Installed
+  - name: Docker and Docker Dependecies are Installed
     apt:
       name: "{{ packages }}"
       state: present
@@ -40,12 +40,12 @@
     notify:
       - docker status
 
-  - name: Verify User vagrant is in Group docker
+  - name: User vagrant is in Group docker
     user:
       name: vagrant
       group: docker
 
-  - name: Verify Swap Files Do Not Exist in /etc/fstab
+  - name: Swap Files Do Not Exist in /etc/fstab
     mount:
       name: "{{ item }}"
       fstype: swap
@@ -54,22 +54,22 @@
       - swap
       - none
 
-  - name: Verify Swap is Disabled
+  - name: Swap is Disabled
     command: swapoff -a
     when: ansible_swaptotal_mb > 0
 
-  - name: Verify Apt Signing Key for Kubernetes
+  - name: Apt Signing Key for Kubernetes
     apt_key:
       url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
       state: present
 
-  - name: Verify Apt Repository for Kubernetes
+  - name: Apt Repository for Kubernetes
     apt_repository:
       repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
       state: present
       filename: kubernetes.list
 
-  - name: Verify Kubernetes Binaries are Installed
+  - name: Kubernetes Binaries are Installed
     apt:
       name: "{{ packages }}"
       state: present
@@ -80,22 +80,25 @@
         - kubeadm
         - kubectl
 
-  - name: Check for Join Command
+  - name: Kubernetes Join Command Exists
     stat:
-      path: "/tmp/join-command.sh"
+      path: "/tmp/join_command.sh"
     register: join_command
 
-  - name: Copy Join Command to Server Location
-    copy: src=join-command.sh dest=/tmp/join-command.sh mode=0777
+  - name: Kubernetes Join Command on Node
+    copy:
+      src: join_command.sh
+      dest: /tmp/join_command.sh
+      mode: 0777
     when: join_command.stat.exists == False
 
-  - name: Check for Kublet Config File
+  - name: Kublet Config File
     stat:
       path: "/etc/kubernetes/kubelet.conf"
     register: kubelet_config
 
-  - name: Join the node to cluster
-    command: sh /tmp/join-command.sh
+  - name: Kubernetes Node Join
+    command: sh /tmp/join_command.sh
     when: kubelet_config.stat.exists == False
 
   handlers:

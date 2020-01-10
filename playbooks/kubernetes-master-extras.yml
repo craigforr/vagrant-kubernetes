@@ -4,7 +4,7 @@
   vars:
     localadmin: vagrant
   tasks:
-  - name: Verify Additional Software Packages are Installed
+  - name: Additional Software Packages
     apt:
       name: "{{ packages }}"
       state: present
@@ -14,21 +14,21 @@
       - bash-completion
       - jq
 
-  - name: Verify kubeadm Completion in .bashrc
+  - name: kubeadm Completion in .bashrc
     lineinfile:
       path: "/home/{{ localadmin }}/.bashrc"
       regexp: ".*source.*kubeadm.completion.bash."
       line: "source <(kubeadm completion bash)"
       state: present
 
-  - name: Verify kubectl Completion in .bashrc
+  - name: kubectl Completion in .bashrc
     lineinfile:
       path: "/home/{{ localadmin }}/.bashrc"
       regexp: ".*source.*kubectl.completion.bash."
       line: "source <(kubectl completion bash)"
       state: present
 
-  - name: Verify Color Prompt in .bashrc
+  - name: Color Prompt in .bashrc
     lineinfile:
       path: "/home/{{ localadmin }}/.bashrc"
       regexp: ".*force_color_prompt=.*"
