@@ -1,5 +1,5 @@
 # Ignore the Kubernetes join script, as it is auto-generated each run
-playbooks/join-command.sh
+playbooks/join_command.sh
 
 # Ansible
 *.retry
