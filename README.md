@@ -39,5 +39,43 @@ vagrant up
 ```bash
 vagrant ssh
 ```
+4. When you're done using the cluster, you can either stop the nodes or destroy the cluster:
+- Power down all the nodes:
+```
+$ vagrant halt
+==> node03: Attempting graceful shutdown of VM...
+==> node02: Attempting graceful shutdown of VM...
+==> node01: Attempting graceful shutdown of VM...
+==> master: Attempting graceful shutdown of VM...
+```
+- Delete all the nodes:
+```
+$ vagrant destroy
+# vagrant destroy --force
+==> node03: Destroying VM and associated drives...
+==> node02: Destroying VM and associated drives...
+==> node01: Destroying VM and associated drives...
+==> master: Destroying VM and associated drives...
+==> master: Running action triggers after destroy ...
+==> master: Running trigger: Remove join_command.sh...
+    master: Running local: Inline script
+    master: rm -v playbooks/join_command.sh
+    master: VERBOSE: Performing the operation "Remove File" on target
+    master: "/home/user/vagrant-kubernetes/playbooks/join_command.sh".
+
+```
+
+To see the status of the cluster nodes at any time, use `vagrant status`:
+
+```
+$ vagrant status
+Current machine states:
+
+master                    poweroff (virtualbox)
+node01                    poweroff (virtualbox)
+node02                    poweroff (virtualbox)
+node03                    poweroff (virtualbox)
+```
+
 
 <!-- EOF -->
