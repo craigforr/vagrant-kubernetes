@@ -3,9 +3,7 @@
 # Base on: "Kubernetes Setup Using Ansible and Vagrant"
 # https://kubernetes.io/blog/2019/03/15/kubernetes-setup-using-ansible-and-vagrant/
 
-# BOX_NAME = "bento/ubuntu-16.04"
-BOX_NAME = "ubuntu/xenial64"
-# BOX_NAME = "ubuntu/bionic64"
+BOX_NAME = "ubuntu/bionic64"
 NODES = 3
 
 Vagrant.configure("2") do |config|
