@@ -3,6 +3,7 @@
   become: true
   vars:
     localadmin: vagrant
+    localgroup: docker
     docker_ce_version: "18.06.2~ce~3-0~ubuntu"
     calico_manifest_url: 'https://docs.projectcalico.org/manifests/calico.yaml'
   tasks:
@@ -48,7 +49,7 @@
 #     - docker-ce-cli
       - containerd.io
 
-  - name: Docker is Installed
+  - name: Docker
     apt:
       name: "{{ packages }}"
       state: present
@@ -75,8 +76,9 @@
 
   - name: User vagrant in Group docker
     user:
-      name: vagrant
+      name: "{{ localadmin }}"
       group: docker
+      append: yes
 
   - name: No Swap Files in /etc/fstab
     mount:
@@ -152,6 +154,9 @@
   - name: Directory .kube
     file:
       path: "/home/{{ localadmin }}/.kube"
+      owner: "{{ localadmin }}"
+      group: "{{ localgroup }}"
+      mode: 0700
       state: directory
 
   - name: Check for Existing Kube Config File
@@ -165,7 +170,7 @@
       src: "/etc/kubernetes/admin.conf"
       dest: "/home/{{ localadmin }}/.kube/config"
       owner: "{{ localadmin }}"
-      group: "{{ localadmin }}"
+      group: "{{ localgroup }}"
       mode: 0600
 #   when: kube_config.stat.exists == True and kube_config.stat.isreg == True
 
