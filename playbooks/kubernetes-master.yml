@@ -4,6 +4,7 @@
   vars:
     localadmin: vagrant
     docker_ce_version: "18.06.2~ce~3-0~ubuntu"
+    calico_manifest_url: 'https://docs.projectcalico.org/manifests/calico.yaml'
   tasks:
 
   - debug:
@@ -176,8 +177,8 @@
     register: network_config
 
   - name: Calico Pod Network
+    command: kubectl create -f "{{ calico_manifest_url }}"
     become: false
-    command: kubectl create -f https://docs.projectcalico.org/v3.8/getting-started/kubernetes/installation/hosted/calico.yaml
     when: network_config.stat.exists == False
 
   - name: Kubernetes Join Command
