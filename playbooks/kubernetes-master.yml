@@ -159,11 +159,6 @@
       mode: 0700
       state: directory
 
-  - name: Check for Existing Kube Config File
-    stat:
-      path: "/home/{{ localadmin }}/.kube/config"
-    register: kube_config
-
   - name: Create Kube Config File
     copy:
       remote_src: True
@@ -172,7 +167,6 @@
       owner: "{{ localadmin }}"
       group: "{{ localgroup }}"
       mode: 0600
-#   when: kube_config.stat.exists == True and kube_config.stat.isreg == True
 
   - name: Calico Pod Network Config
     stat:
