@@ -8,184 +8,184 @@
     calico_manifest_url: 'https://docs.projectcalico.org/manifests/calico.yaml'
   tasks:
 
-  - debug:
-      msg: "{{ ansible_facts }}"
+    - debug:
+        msg: "{{ ansible_facts }}"
 
-  - debug:
-      msg: "{{ lookup('pipe','whoami') }}"
+    - debug:
+        msg: "{{ lookup('pipe','whoami') }}"
 
-  - name: Software Packages Allowing Apt over HTTPS
-    apt:
-      name: "{{ packages }}"
-      state: present
-      update_cache: yes
-    vars:
-      packages:
-      - apt-transport-https
-      - ca-certificates
-      - curl
-      - gnupg-agent
-      - software-properties-common
+    - name: Software Packages Allowing Apt over HTTPS
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gnupg-agent
+        - software-properties-common
 
-  - name: Apt Signing Key for Docker
-    apt_key:
-      url: https://download.docker.com/linux/ubuntu/gpg
-      state: present
+    - name: Apt Signing Key for Docker
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
 
-  - name: Apt Repository for Docker Stable Version
-    apt_repository:
-      repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable"
-      state: present
+    - name: Apt Repository for Docker Stable Version
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable"
+        state: present
 
-  - name: Docker Dependecies
-    apt:
-      name: "{{ packages }}"
-      state: present
-      update_cache: yes
-    vars:
-      packages:
-#     docker-ce-cli is apparently only required for Docker 18.09+
-#     https://stackoverflow.com/a/54505075/366727
-#     - docker-ce-cli
-      - containerd.io
+    - name: Docker Dependecies
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+  #     docker-ce-cli is apparently only required for Docker 18.09+
+  #     https://stackoverflow.com/a/54505075/366727
+  #     - docker-ce-cli
+        - containerd.io
 
-  - name: Docker
-    apt:
-      name: "{{ packages }}"
-      state: present
-      update_cache: yes
-    vars:
-      packages:
-      - "docker-ce={{ docker_ce_version }}"
+    - name: Docker
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+        - "docker-ce={{ docker_ce_version }}"
 
-  - dpkg_selections:
-      name: docker-ce
-      selection: hold
+    - dpkg_selections:
+        name: docker-ce
+        selection: hold
 
-  - name: Docker Daemon JSON Configuration File
-    copy:
-      src: "/home/{{ localadmin }}/docker_daemon.json"
-      dest: /etc/docker/daemon.json
+    - name: Docker Daemon JSON Configuration File
+      copy:
+        src: "/home/{{ localadmin }}/docker_daemon.json"
+        dest: /etc/docker/daemon.json
 
-  - name: Directory for Docker Service
-    file:
-      path: /etc/systemd/system/docker.service.d
-      state: directory
-    notify:
-      - Systemd Manager Reload
+    - name: Directory for Docker Service
+      file:
+        path: /etc/systemd/system/docker.service.d
+        state: directory
+      notify:
+        - Systemd Manager Reload
 
-  - name: User vagrant in Group docker
-    user:
-      name: "{{ localadmin }}"
-      group: docker
-      append: yes
+    - name: User vagrant in Group docker
+      user:
+        name: "{{ localadmin }}"
+        group: docker
+        append: yes
 
-  - name: No Swap Files in /etc/fstab
-    mount:
-      name: "{{ item }}"
-      fstype: swap
-      state: absent
-    with_items:
-      - swap
-      - none
+    - name: No Swap Files in /etc/fstab
+      mount:
+        name: "{{ item }}"
+        fstype: swap
+        state: absent
+      with_items:
+        - swap
+        - none
 
-  - name: Swap Disabled
-    command: swapoff -a
-    when: ansible_swaptotal_mb > 0
+    - name: Swap Disabled
+      command: swapoff -a
+      when: ansible_swaptotal_mb > 0
 
-  - name: Snap Installed
-    apt:
-      name: snapd
-      state: present
+    - name: Snap Installed
+      apt:
+        name: snapd
+        state: present
 
-  - name: Snap Enabled in systemd
-    systemd:
-      state: started
-      name: snapd
+    - name: Snap Enabled in systemd
+      systemd:
+        state: started
+        name: snapd
 
-  - name: Helm Installed (Snap)
-    snap:
-      name:
-      - helm
-      classic: true
+    - name: Helm Installed (Snap)
+      snap:
+        name:
+        - helm
+        classic: true
 
-  - name: Apt Signing Key for Kubernetes
-    apt_key:
-      url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
-      state: present
+    - name: Apt Signing Key for Kubernetes
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
 
-  - name: Apt Repository for Kubernetes
-    apt_repository:
-      repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
-      state: present
-      filename: kubernetes.list
+    - name: Apt Repository for Kubernetes
+      apt_repository:
+        repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+        state: present
+        filename: kubernetes.list
 
-  - name: Kubernetes Binaries Installed
-    apt:
-      name: "{{ packages }}"
-      state: present
-      update_cache: yes
-    vars:
-      packages:
-        - kubelet
-        - kubeadm
-        - kubectl
+    - name: Kubernetes Binaries Installed
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+          - kubelet
+          - kubeadm
+          - kubectl
 
-  - name: Check for Existing Kubernetes Cluster
-    shell: kubectl get nodes --all-namespaces
-    become: False
-    register: kubernetes_cluster
-    failed_when: False
-    changed_when:
-      - "'refused' not in kubernetes_cluster.stdout"
+    - name: Check for Existing Kubernetes Cluster
+      shell: kubectl get nodes --all-namespaces
+      become: False
+      register: kubernetes_cluster
+      failed_when: False
+      changed_when:
+        - "'refused' not in kubernetes_cluster.stdout"
 
-  - debug:
-      var: kubernetes_cluster
+    - debug:
+        var: kubernetes_cluster
 
-  - name: Kubernetes Cluster Initialization
-    command: >
-      kubeadm init
-      --node-name master
-      --pod-network-cidr=192.168.56.128/16
-      --apiserver-advertise-address="192.168.56.129"
-      --apiserver-cert-extra-sans="192.168.56.129"
-    when: "'refused' in kubernetes_cluster.stderr"
+    - name: Kubernetes Cluster Initialization
+      command: >
+        kubeadm init
+        --node-name master
+        --pod-network-cidr=192.168.56.128/16
+        --apiserver-advertise-address="192.168.56.129"
+        --apiserver-cert-extra-sans="192.168.56.129"
+      when: "'refused' in kubernetes_cluster.stderr"
 
-  - name: Directory .kube
-    file:
-      path: "/home/{{ localadmin }}/.kube"
-      owner: "{{ localadmin }}"
-      group: "{{ localgroup }}"
-      mode: 0700
-      state: directory
+    - name: Directory .kube
+      file:
+        path: "/home/{{ localadmin }}/.kube"
+        owner: "{{ localadmin }}"
+        group: "{{ localgroup }}"
+        mode: 0700
+        state: directory
 
-  - name: Create Kube Config File
-    copy:
-      remote_src: True
-      src: "/etc/kubernetes/admin.conf"
-      dest: "/home/{{ localadmin }}/.kube/config"
-      owner: "{{ localadmin }}"
-      group: "{{ localgroup }}"
-      mode: 0600
+    - name: Create Kube Config File
+      copy:
+        remote_src: True
+        src: "/etc/kubernetes/admin.conf"
+        dest: "/home/{{ localadmin }}/.kube/config"
+        owner: "{{ localadmin }}"
+        group: "{{ localgroup }}"
+        mode: 0600
 
-  - name: Calico Pod Network Config
-    stat:
-      path: "/etc/cni/net.d/calico-kubeconfig"
-    changed_when: False
-    failed_when: False
-    register: network_config
+    - name: Calico Pod Network Config
+      stat:
+        path: "/etc/cni/net.d/calico-kubeconfig"
+      changed_when: False
+      failed_when: False
+      register: network_config
 
-  - name: Calico Pod Network
-    command: kubectl create -f "{{ calico_manifest_url }}"
-    become: false
-    when: network_config.stat.exists == False
+    - name: Calico Pod Network
+      command: kubectl create -f "{{ calico_manifest_url }}"
+      become: false
+      when: network_config.stat.exists == False
 
-  - name: Kubernetes Join Command
-    command: kubeadm token create --print-join-command
-    register: join_command
+    - name: Kubernetes Join Command
+      command: kubeadm token create --print-join-command
+      register: join_command
 
-  - name: Join Command in Local File
-    local_action: copy content="{{ join_command.stdout_lines[0] }}" dest="./join_command.sh"
+    - name: Join Command in Local File
+      local_action: copy content="{{ join_command.stdout_lines[0] }}" dest="./join_command.sh"
 
   handlers:
     - name: Docker Status
