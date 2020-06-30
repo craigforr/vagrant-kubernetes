@@ -1,6 +1,6 @@
 # Deploys a Single-Master Kubernetes Cluster with an Arbitrary Number of Nodes
 #
-# Base on: "Kubernetes Setup Using Ansible and Vagrant"
+# Based on: "Kubernetes Setup Using Ansible and Vagrant"
 # https://kubernetes.io/blog/2019/03/15/kubernetes-setup-using-ansible-and-vagrant/
 
 BOX_NAME = "ubuntu/bionic64"
