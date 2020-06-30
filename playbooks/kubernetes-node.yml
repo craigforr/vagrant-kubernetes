@@ -4,102 +4,122 @@
   vars:
     localadmin: vagrant
   tasks:
-  - name: Software Packages Allowing Apt over HTTPS
-    apt:
-      name: "{{ packages }}"
-      state: present
-      update_cache: yes
-    vars:
-      packages:
-      - apt-transport-https
-      - ca-certificates
-      - curl
-      - gnupg-agent
-      - software-properties-common
+    - name: IPv4 Address for Kubelet
+      set_fact:
+        kubelet_ipv4: "{{ ip_address }}"
+      loop: "{{ ansible_all_ipv4_addresses }}"
+      loop_control:
+        loop_var: ip_address
+      when: ip_address is match('192.168.56')
 
-  - name: Apt Signing Key for Docker
-    apt_key:
-      url: https://download.docker.com/linux/ubuntu/gpg
-      state: present
+    - name: IPv4 Address for Kubelet Debug
+      debug:
+        var: kubelet_ipv4
 
-  - name: Apt Repository for Docker Stable Version
-    apt_repository:
-      repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable
-      state: present
+    - name: Kubelet Defaults File for Extra Args
+      template:
+        src: kubelet.j2
+        dest: /etc/default/kubelet
+        owner: root
+        group: root
+        mode: '0644'
 
-  - name: Docker and Docker Dependecies are Installed
-    apt:
-      name: "{{ packages }}"
-      state: present
-      update_cache: yes
-    vars:
-      packages:
-      - docker-ce
-      - docker-ce-cli
-      - containerd.io
-    notify:
-      - docker status
+    - name: Software Packages Allowing Apt over HTTPS
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gnupg-agent
+        - software-properties-common
 
-  - name: User vagrant is in Group docker
-    user:
-      name: vagrant
-      group: docker
+    - name: Apt Signing Key for Docker
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
 
-  - name: Swap Files Do Not Exist in /etc/fstab
-    mount:
-      name: "{{ item }}"
-      fstype: swap
-      state: absent
-    with_items:
-      - swap
-      - none
+    - name: Apt Repository for Docker Stable Version
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable
+        state: present
 
-  - name: Swap is Disabled
-    command: swapoff -a
-    when: ansible_swaptotal_mb > 0
+    - name: Docker and Docker Dependecies are Installed
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io
+      notify:
+        - docker status
 
-  - name: Apt Signing Key for Kubernetes
-    apt_key:
-      url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
-      state: present
+    - name: User vagrant is in Group docker
+      user:
+        name: vagrant
+        group: docker
 
-  - name: Apt Repository for Kubernetes
-    apt_repository:
-      repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
-      state: present
-      filename: kubernetes.list
+    - name: Swap Files Do Not Exist in /etc/fstab
+      mount:
+        name: "{{ item }}"
+        fstype: swap
+        state: absent
+      with_items:
+        - swap
+        - none
 
-  - name: Kubernetes Binaries are Installed
-    apt:
-      name: "{{ packages }}"
-      state: present
-      update_cache: yes
-    vars:
-      packages:
-        - kubelet
-        - kubeadm
-        - kubectl
+    - name: Swap is Disabled
+      command: swapoff -a
+      when: ansible_swaptotal_mb > 0
 
-  - name: Kubernetes Join Command Exists
-    stat:
-      path: "/tmp/join_command.sh"
-    register: join_command
+    - name: Apt Signing Key for Kubernetes
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
 
-  - name: Kubernetes Join Command on Node
-    copy:
-      src: join_command.sh
-      dest: /tmp/join_command.sh
-      mode: 0777
-    when: join_command.stat.exists == False
+    - name: Apt Repository for Kubernetes
+      apt_repository:
+        repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+        state: present
+        filename: kubernetes.list
 
-  - name: Kublet Config File
-    stat:
-      path: "/etc/kubernetes/kubelet.conf"
-    register: kubelet_config
+    - name: Kubernetes Binaries are Installed
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+          - kubelet
+          - kubeadm
+          - kubectl
 
-  - name: Kubernetes Node Join
-    command: sh /tmp/join_command.sh
-    when: kubelet_config.stat.exists == False
+    - name: Kubernetes Join Command Exists
+      stat:
+        path: "/tmp/join_command.sh"
+      register: join_command
+
+    - name: Kubernetes Join Command on Worker
+      copy:
+        src: join_command.sh
+        dest: /tmp/join_command.sh
+        mode: 0777
+      when: join_command.stat.exists == False
+
+    - name: Kublet Config File
+      stat:
+        path: "/etc/kubernetes/kubelet.conf"
+      register: kubelet_config
+
+    - name: Kubernetes Worker Join
+      command: sh /tmp/join_command.sh
+      when: kubelet_config.stat.exists == False
 
   handlers:
     - name: docker status
